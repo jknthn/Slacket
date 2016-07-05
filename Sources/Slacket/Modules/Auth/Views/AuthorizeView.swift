@@ -8,11 +8,8 @@
 
 import Foundation
 import Kitura
-import HeliumLogger
-import LoggerAPI
 
-import Mustache
-import File
+import TemplateDisplay
 
 enum AuthorizeMessage {
     case authorized
@@ -38,7 +35,7 @@ protocol AuthorizeViewResponder {
     func show(message: AuthorizeMessage)
 }
 
-struct AuthorizeView: ParsedBodyResponder {
+struct AuthorizeView {
 
     let response: RouterResponse
 
@@ -47,21 +44,6 @@ struct AuthorizeView: ParsedBodyResponder {
         let filename = message.filename
         let publicDirectory = repoDirectory+"public/"
         let filePath = publicDirectory+filename
-
-        if let templateFile = try? File(path: filePath),
-        let templateString = try? String(data: templateFile.readAllBytes()),
-        let template = try? Template(string: templateString),
-        let body = try? template.render(context: Context(box: Box(dictionary: message.context))) {
-            do {
-                Log.debug("sending webpage: \(filePath)")
-                //response.headers.append("Content-Type", value: body.contentType)
-                try response.send(body.string)
-            }
-            catch {
-                Log.error("Failed to send response \(error)")
-            }
-        } else {
-            Log.error("Failed to parse template")
-        }
+        TemplateDisplay(response: response).show(withPathString: filePath, context: message.context)
     }
 }
