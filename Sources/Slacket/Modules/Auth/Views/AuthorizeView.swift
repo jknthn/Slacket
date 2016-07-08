@@ -12,7 +12,7 @@ import KituraNet
 import HeliumLogger
 import LoggerAPI
 
-import Mustache
+import TemplateDisplay
 
 enum AuthorizeMessage {
     case authorized
@@ -71,14 +71,15 @@ struct AuthorizeView: ParsedBodyResponder {
         let filename = message.filename
         let publicDirectory = repoDirectory + "public/"
         let filePath = publicDirectory + filename
-        if let templateData = NSData(contentsOfFile: filePath),
-            let templateString = String(data: templateData, encoding: NSUTF8StringEncoding),
-            let template = try? Template(string: templateString),
-            let body = try? template.render(context: Context(box: Box(dictionary: message.context))) {
+        let displayEngine = MustacheTemplateDisplay()
+        
+        do {
+            let body = try displayEngine.render(filePath: filePath, context: message.context)
             Log.debug("sending webpage: \(filePath)")
             //response.headers.append("Content-Type", value: body.contentType)
-            response.status(message.status).send(body.string)
-        } else {
+            response.status(message.status).send(body)
+        }
+        catch {
             Log.error("Failed to parse template")
         }
     }
